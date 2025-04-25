@@ -1,12 +1,10 @@
 # main.py
-from auth.gmail_auth.py import authenticate_gmail
-from auth.imap_login.py import authenticate_imap
-from fetcher.fetch_emails.py import fetch_emails
-from processor.summarizer.py import summarize_emails
-from processor.classifier.py import classify_emails
-from sender.send_summary.py import send_summary_email
-from utils.config.py import GMAIL_ACCOUNT, IMAP_SERVER, OTHER_ACCOUNTS, OPENAI_API_KEY
-from utils.helpers.py import get_yesterday_date
+from auth import authenticate_gmail, authenticate_imap
+from fetcher import fetch_emails
+from processor import summarize_emails, classify_emails
+from sender import send_summary_email
+from utils.config import GMAIL_ACCOUNT, IMAP_SERVER, IMAP_PORT, OTHER_ACCOUNTS
+from utils.helpers import get_yesterday_date
 
 def main():
     # Authenticate Gmail account
