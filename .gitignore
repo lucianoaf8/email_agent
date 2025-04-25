@@ -1,0 +1,37 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environments
+.venv/
+env/
+venv/
+ENV/
+*.env
+
+# Token and credentials
+auth/token.pickle
+auth/credentials.json
+
+# VSCode settings
+.vscode/
+
+# Logs and other temp files
+*.log
+*.tmp
+*.bak
+
+# macOS
+.DS_Store
+
+# Python dependency files
+*.egg-info/
+dist/
+build/
+
+# Pipenv
+Pipfile.lock
+
+# Jupyter Notebook
+.ipynb_checkpoints/
