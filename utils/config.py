@@ -27,3 +27,7 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 REPORT_RECIPIENT = os.getenv("REPORT_RECIPIENT", SMTP_USER)
+
+# Operational modes
+TEST_MODE = os.getenv("TEST_MODE", "false").lower() == "true"
+EMAIL_LIMIT = int(os.getenv("EMAIL_LIMIT", "5"))  # Default 5 emails for testing

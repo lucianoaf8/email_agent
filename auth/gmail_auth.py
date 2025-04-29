@@ -5,13 +5,14 @@ from pathlib import Path
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.auth.exceptions import RefreshError
+from utils.logger import logger
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s"
-)
-logger = logging.getLogger("gmail_auth")
+# logging.basicConfig(
+#     level=logging.INFO,
+#     format="%(asctime)s [%(levelname)s] %(message)s"
+# )
+# logger = logging.getLogger("gmail_auth")
 
 SCOPES = ["https://mail.google.com/"]  # Full mail access
 
@@ -26,6 +27,7 @@ def get_gmail_oauth2_credentials(interactive_if_missing=True):
     Handles token refresh, saving/loading, and first-time authentication.
     If interactive authentication is needed and interactive_if_missing=False, raise Exception.
     """
+    logger.info("Starting get_gmail_oauth2_credentials")
     creds = None
 
     # Load token if it exists
@@ -83,6 +85,7 @@ def get_gmail_oauth2_credentials(interactive_if_missing=True):
             logger.info("Saved new credentials to token.pickle.")
         except Exception as e:
             logger.error(f"Could not save credentials: {e}")
+    logger.info("Finished get_gmail_oauth2_credentials")
     return creds
 
 

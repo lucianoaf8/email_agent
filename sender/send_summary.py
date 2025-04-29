@@ -1,7 +1,9 @@
 import os
+import re
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from utils.logger import logger
 
 # Load secrets from environment
 from dotenv import load_dotenv
@@ -15,12 +17,31 @@ REPORT_RECIPIENT = os.getenv("REPORT_RECIPIENT", SMTP_USER)
 
 def craft_summary_mail(subject, summary_text, important_emails_by_mailbox):
     """
-    Compose a nicely formatted HTML summary report.
+    Compose a nicely formatted HTML summary report with credential scrubbing.
     `important_emails_by_mailbox` is a dict: {
         'Gmail': [{'from':..., 'subject':..., 'snippet':...}, ...], 
         'Other IMAP': [...]
     }
     """
+    logger.info("Starting craft_summary_mail with credential scrubbing")
+    CRED_PATTERNS = [
+        r'(?i)(password|token|key|secret|auth)\s*[:=]\s*[\'"]?\S+[\'"]?',
+        r'sk-[a-zA-Z0-9]{24,}',
+        r'ghp_[a-zA-Z0-9]{36}',
+        r'eyJ[a-zA-Z0-9_-]{10,}\.eyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}'
+    ]
+    
+    # Scrub summary text
+    for pattern in CRED_PATTERNS:
+        summary_text = re.sub(pattern, '[REDACTED-CREDENTIAL]', summary_text)
+    
+    # Scrub email content
+    for box, emails in important_emails_by_mailbox.items():
+        for e in emails:
+            for pattern in CRED_PATTERNS:
+                e['subject'] = re.sub(pattern, '[REDACTED-CREDENTIAL]', e['subject'])
+                e['snippet'] = re.sub(pattern, '[REDACTED-CREDENTIAL]', e['snippet'])
+    
     html = ["<h2>Daily Email Summary</h2>", f"<p>{summary_text}</p>"]
     for box, emails in important_emails_by_mailbox.items():
         html.append(f"<h3>{box} - Important Emails</h3>")
@@ -31,6 +52,7 @@ def craft_summary_mail(subject, summary_text, important_emails_by_mailbox):
             html.append("</ul>")
         else:
             html.append("<p>No important emails listed for this account.</p>")
+    logger.info("Finished craft_summary_mail")
     return "\n".join(html)
 
 def send_summary_email(subject, summary_text, important_emails_by_mailbox,
@@ -38,6 +60,7 @@ def send_summary_email(subject, summary_text, important_emails_by_mailbox,
     """
     Send the daily summary email.
     """
+    logger.info("Starting send_summary_email")
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
     msg["From"] = sender
@@ -46,15 +69,19 @@ def send_summary_email(subject, summary_text, important_emails_by_mailbox,
     html_content = craft_summary_mail(subject, summary_text, important_emails_by_mailbox)
     msg.attach(MIMEText(html_content, "html"))
 
-    if SMTP_PORT == 465:
-        server = smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT)
-    else:
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.starttls()
-    # Login and send
-    server.login(SMTP_USER, SMTP_PASSWORD)
-    server.sendmail(sender, [recipient], msg.as_string())
-    server.quit()
+    try:
+        if SMTP_PORT == 465:
+            server = smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT)
+        else:
+            server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+            server.starttls()
+        # Login and send
+        server.login(SMTP_USER, SMTP_PASSWORD)
+        server.sendmail(sender, [recipient], msg.as_string())
+        server.quit()
+        logger.info("Finished send_summary_email")
+    except Exception as e:
+        logger.error(f"Failed to send summary email: {e}")
 
 if __name__ == "__main__":
     # Example usage
@@ -71,4 +98,3 @@ if __name__ == "__main__":
     }
     send_summary_email("Daily Email Report", mock_summary, mock_important)
     print("Sent (if SMTP settings are correct)")
-

@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from auth.gmail_auth import get_gmail_oauth2_credentials
 from google.auth.transport.requests import Request
+import ssl
 from fetcher import fetch_emails
 from utils.config import GMAIL_ACCOUNT, IMAP_SERVER, IMAP_PORT
 
@@ -30,12 +31,26 @@ def login_via_oauth2(creds, user, host, port):
     """
     Given Google OAuth2 credentials, authenticate to IMAP using XOAUTH2.
     """
+    import logging
+    logger = logging.getLogger("demo_fetch")
+    
     # Refresh token if needed
     if not creds.valid:
+        logger.info("Refreshing credentials...")
         creds.refresh(Request())
+    
     auth_str = f"user={user}\x01auth=Bearer {creds.token}\x01\x01"
-    imap = imaplib.IMAP4_SSL(host, port)
-    imap.authenticate('XOAUTH2', lambda x: auth_str.encode())
+    context = ssl.create_default_context()
+    imap = imaplib.IMAP4_SSL(host, port, ssl_context=context)
+    
+    logger.info("Attempting IMAP authentication...")
+    try:
+        imap.authenticate('XOAUTH2', lambda x: auth_str.encode())
+        logger.info("IMAP authentication successful.")
+    except Exception as e:
+        logger.error(f"IMAP authentication failed: {e}")
+        raise
+    
     return imap
 
 

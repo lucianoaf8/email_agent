@@ -1,6 +1,7 @@
 import os
 from typing import List, Dict
 import openai
+from utils.logger import logger
 
 # Add this if you're planning to use dotenv for secrets (recommended)
 from dotenv import load_dotenv
@@ -15,12 +16,14 @@ def format_emails_for_summary(emails: List[Dict]) -> str:
     """
     Formats a list of emails ready for LLM prompt.
     """
+    logger.info("Starting format_emails_for_summary")
     lines = []
     for idx, email_obj in enumerate(emails, 1):
         from_ = email_obj.get("from", "")
         subject = email_obj.get("subject", "")
         snippet = email_obj.get("snippet", "")
         lines.append(f"{idx}. From: {from_}\n   Subject: {subject}\n   Snippet: {snippet}")
+    logger.info("Finished format_emails_for_summary")
     return "\n".join(lines)
 
 def summarize_emails_with_llm(emails: List[Dict], mailbox: str = "Mailbox") -> str:
@@ -28,6 +31,7 @@ def summarize_emails_with_llm(emails: List[Dict], mailbox: str = "Mailbox") -> s
     Takes a list of email dicts, generates a prompt, and returns a concise summary via GPT API.
     Returns summary string.
     """
+    logger.info(f"Starting summarize_emails_with_llm for {mailbox}")
     if not emails:
         return f"No emails received in {mailbox} yesterday."
 
@@ -40,18 +44,23 @@ def summarize_emails_with_llm(emails: List[Dict], mailbox: str = "Mailbox") -> s
     )
 
     # Using the GPT-3.5-turbo model
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",  # Or gpt-4o etc.
-        messages=[
-            {"role": "system", "content": "You are an expert assistant for summarizing email digests."},
-            {"role": "user", "content": prompt}
-        ],
-        max_tokens=300,
-        temperature=0.5,
-        n=1,
-        stop=None,
-    )
-    return response.choices[0].message['content'].strip()
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",  # Or gpt-4o etc.
+            messages=[
+                {"role": "system", "content": "You are an expert assistant for summarizing email digests."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=300,
+            temperature=0.5,
+            n=1,
+            stop=None,
+        )
+        logger.info("Finished summarize_emails_with_llm")
+        return response.choices[0].message['content'].strip()
+    except Exception as e:
+        logger.error(f"Failed to summarize emails: {e}")
+        return ""
 
 # Optionally: A simple CLI for testing this module - run as script
 if __name__ == "__main__":

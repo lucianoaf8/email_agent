@@ -1,6 +1,7 @@
 # processor/classifier.py
 
 import re
+from utils.logger import logger
 
 # === Edit these lists as you review your mailbox and preferences ===
 
@@ -44,22 +45,39 @@ IMPORTANT_SENDERS = [
 
 def classify_email(email_obj):
     """Classifies an email_obj as 'important', 'junk', or 'other' based on sender/subject keywords."""
+    logger.info(f"Classifying email: {email_obj.get('subject')}")
     subj = (email_obj.get("subject") or "").lower()
     sender = (email_obj.get("from") or "").lower()
 
     # Promotion/Junk rules (subject or sender)
     if any(word in subj for word in PROMOTION_KEYWORDS):
+        logger.info(f"Classified as junk due to promotion keyword in subject")
         return "junk"
     if any(s in sender for s in PROMOTION_SENDERS):
+        logger.info(f"Classified as junk due to promotion sender")
         return "junk"
 
     # Important rules (subject or sender)
     if any(word in subj for word in IMPORTANT_KEYWORDS):
+        logger.info(f"Classified as important due to important keyword in subject")
         return "important"
     if any(s in sender for s in IMPORTANT_SENDERS):
+        logger.info(f"Classified as important due to important sender")
         return "important"
 
+    logger.info(f"Classified as other")
     return "other"
+
+
+def classify_emails(emails):
+    """Classifies a list of emails as 'important', 'junk', or 'other'."""
+    logger.info(f"Classifying {len(emails)} emails")
+    classified_emails = []
+    for email in emails:
+        classification = classify_email(email)
+        classified_emails.append({"email": email, "classification": classification})
+    logger.info(f"Finished classifying emails")
+    return classified_emails
 
 # Optional: let user see why something was classified a certain way
 def explain_classification(email_obj):
@@ -93,4 +111,3 @@ if __name__ == "__main__":
         label = classify_email(email)
         reason = explain_classification(email)
         print(f"Subject: {email['subject']}\n  >> Classified as: {label}\n  >> Reason: {reason}\n")
-
